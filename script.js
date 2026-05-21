@@ -1,3 +1,7 @@
+  // Disable browser scroll restoration so a refresh during the QR intro
+  // doesn't drop the visitor mid-page when the overlay clears.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   (function(){
     var intro  = document.getElementById('qrIntro');
     var grid   = document.getElementById('qrGrid');
@@ -12,6 +16,8 @@
     }
     sessionStorage.setItem('aitemz_intro_v1', 'shown');
     document.body.classList.add('qr-locked');
+    // Hold the page at the top while the overlay is up.
+    window.scrollTo(0, 0);
 
     // ── Build a believable QR pattern ─────────────────────────────
     // 25×25 modules. Three finder patterns (7×7, top-left/top-right/
@@ -103,10 +109,16 @@
       intro.classList.add('done');
       timers.forEach(clearTimeout);
       timers = [];
+      // Always reveal the page at the very top — fights any restored
+      // scroll position from refresh / back-nav.
+      window.scrollTo(0, 0);
       setTimeout(function(){
         document.body.classList.remove('qr-locked');
         if (intro && intro.parentNode) intro.parentNode.removeChild(intro);
         intro = null;
+        // Belt + braces — once the overlay is gone, snap to top again
+        // in case any layout-induced scroll happened during dismissal.
+        window.scrollTo(0, 0);
       }, 650);
     }
 
@@ -667,6 +679,13 @@
           : 0.50 + (i - 4) * 0.10; // 0.50, 0.60, 0.70, 0.80
         card.classList.toggle('in', p >= threshold);
       });
+
+      // Mobile: the cards section is hidden at rest (the phone owns the
+      // first viewport). Once we cross into phase 2, surface it with the
+      // .cards-on class so it slides up and the insights become readable.
+      if (cardDeck && cardDeck.parentElement) {
+        cardDeck.parentElement.classList.toggle('cards-on', p >= 0.18);
+      }
 
       if (progress) progress.style.setProperty('--w', (p * 100).toFixed(1) + '%');
     }
