@@ -258,11 +258,12 @@
       // Hero translates DOWN at 0.5× scroll speed — appears to "stay" while
       // the page scrolls past. Cap at hero height so it doesn't drift into
       // sections far below.
+      // NOTE: don't tween opacity here — the hero contains 3 huge blurred
+      // orbs, and animating opacity on the parent forces a full recomposite
+      // of the blurred layers every frame. The next section paints over the
+      // hero with var(--black) on its own once scrolled past.
       const offset = Math.min(y * 0.5, heroH);
       hero.style.transform = `translate3d(0, ${offset}px, 0)`;
-      // Fade slightly faster than the translate so the hero disappears by
-      // the time the user is fully past it.
-      hero.style.opacity = Math.max(0, 1 - y / (heroH * 0.85)).toString();
     }
 
     function onScroll(){
