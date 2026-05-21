@@ -444,10 +444,16 @@
     100%{transform:translateX(-50%)}
   }
 
-  /* ---------- SECTION WRAPPER ---------- */
+  /* ---------- SECTION WRAPPER ----------
+     Full-bleed background, content centered + capped at 1360px.
+     padding-left/right resolve to:
+       viewport ≤ 1440:  40px       → content = viewport - 80px
+       viewport >  1440:  (vw-1360)/2 → content = 1360px (same as old 1440 max-width minus 40px gutters)
+     Background fills the viewport so adjacent sections (hero, principle) which
+     are also full-bleed line up cleanly with no side strips. */
   section.block{
-    max-width:1440px;margin:0 auto;
-    padding:140px 40px;
+    max-width:none;margin:0;
+    padding:140px max(40px, calc((100vw - 1360px) / 2));
     position:relative;z-index:2;
   }
 
