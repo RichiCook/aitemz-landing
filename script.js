@@ -649,25 +649,39 @@
       if (Math.abs(p - lastP) < 0.002) return;
       lastP = p;
 
-      // Phase 1 — phone tape advances during the first 45% of scroll, then holds.
-      const phoneProgress = Math.min(1, p / 0.45);
+      // Phase boundaries differ on mobile vs desktop:
+      // - desktop: phone tape advances during first 45%, cards take 45-100%
+      // - mobile: phone tape OWNS 0-50% (full viewport), then phone slides
+      //   up/out and cards take 50-100% (also full viewport). The mobile
+      //   phase swap is driven via CSS class .phase-cards on .studio-stage.
+      const isMobile = window.matchMedia('(max-width:780px)').matches;
+      const phonePhaseEnd = isMobile ? 0.50 : 0.45;
+
+      // Phone tape advances during the phone phase, then holds.
+      const phoneProgress = Math.min(1, p / phonePhaseEnd);
       const scroller = tape.parentElement;
       const tapeH    = tape.scrollHeight;
       const viewH    = scroller.clientHeight;
       const maxTape  = Math.max(0, tapeH - viewH);
-      tape.style.transform = `translateY(${-phoneProgress * maxTape}px)`;
+      tape.style.transform = `translate3d(0, ${(-phoneProgress * maxTape).toFixed(2)}px, 0)`;
 
-      // Phase 2 — after phone holds, the card-deck inner translates upward to
-      // bring cards 5–8 into view. Begins at p=0.45 (slight overlap so the
-      // transition feels continuous, not stop-then-start).
+      // Cards phase — deck inner translates upward to bring later cards
+      // into view.
       const deckInner = document.getElementById('studioCardsInner');
       if (deckInner){
-        const deckProgress = Math.max(0, (p - 0.45) / 0.55);
+        const deckProgress = Math.max(0, (p - phonePhaseEnd) / (1 - phonePhaseEnd));
         const deckHost = deckInner.parentElement;            // .studio-card-deck
         const innerH   = deckInner.scrollHeight;
         const hostH    = deckHost.clientHeight;
         const maxDeck  = Math.max(0, innerH - hostH);
-        deckInner.style.transform = `translateY(${-deckProgress * maxDeck}px)`;
+        deckInner.style.transform = `translate3d(0, ${(-deckProgress * maxDeck).toFixed(2)}px, 0)`;
+      }
+
+      // Mobile phase swap: at the boundary, phone slides up and out, cards
+      // slide up from below to take the whole viewport.
+      if (isMobile) {
+        const stage = studio.querySelector('.studio-stage');
+        if (stage) stage.classList.toggle('phase-cards', p >= phonePhaseEnd);
       }
 
       // Card reveals — 8 thresholds. Cards 1–4 reveal during phone phase,
@@ -679,13 +693,6 @@
           : 0.50 + (i - 4) * 0.10; // 0.50, 0.60, 0.70, 0.80
         card.classList.toggle('in', p >= threshold);
       });
-
-      // Mobile: the cards section is hidden at rest (the phone owns the
-      // first viewport). Once we cross into phase 2, surface it with the
-      // .cards-on class so it slides up and the insights become readable.
-      if (cardDeck && cardDeck.parentElement) {
-        cardDeck.parentElement.classList.toggle('cards-on', p >= 0.18);
-      }
 
       if (progress) progress.style.setProperty('--w', (p * 100).toFixed(1) + '%');
     }

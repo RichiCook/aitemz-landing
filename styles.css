@@ -29,7 +29,7 @@
   }
 
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;overflow-x:hidden;max-width:100%}
   /* anchor offset so jump targets clear the fixed nav + sticky ticker */
   section[id], header[id]{scroll-margin-top:var(--sticky-offset, 130px)}
   body{
@@ -40,6 +40,7 @@
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
+    max-width:100%;
     letter-spacing:-0.005em;
     /* hide page scrollbar — page still scrolls, just no visible track */
     scrollbar-width:none;
@@ -1111,12 +1112,13 @@
     background:#070707;border-radius:1px;
   }
 
-  /* inner scrolling tape — multi-screen vertical strip */
+  /* inner scrolling tape — multi-screen vertical strip.
+     No CSS transition on transform — the rAF scroll handler updates this
+     every frame; a transition layer just lags and produces visible wobble. */
   .studio-tape{
     position:absolute;top:0;left:0;right:0;
     will-change:transform;
-    transform:translateY(0);
-    transition:transform .12s linear;
+    transform:translate3d(0,0,0);
     padding-top:44px;
   }
   .studio-screen{
@@ -1487,8 +1489,8 @@
   }
   .studio-card-deck-inner{
     position:relative;
-    transition:transform .12s linear;
     will-change:transform;
+    transform:translate3d(0,0,0);
     padding-bottom:24px;
   }
   .studio-card{
@@ -1573,66 +1575,102 @@
     .studio-cards-intro h3{font-size:30px}
   }
   @media (max-width:780px){
-    /* Keep scrollytelling on mobile too — sticky stage, page scroll drives the
-       phone tape AND the card-deck reveal. Phone now claims the entire first
-       sticky viewport; the cards deck appears below it as the visitor scrolls. */
-    .studio-scroll{height:500vh;background:none}
+    /* MOBILE STUDIO — two-phase sticky stage.
+       PHASE 1 (p: 0 → 0.5): the phone fills the entire viewport and the
+       internal tape scrolls through its 4 screens.
+       PHASE 2 (p: 0.5 → 1): the phone slides up out of view and the cards
+       section slides up to claim the full viewport, scrolling through all
+       8 insight cards.
+       The .studio-stage element gets a .phase-cards class from the scroll
+       handler at the boundary, which drives the CSS transform swap. */
+    .studio-scroll{height:700vh;background:none}
     .studio-stage{
       position:sticky;top:0;height:100vh;min-height:600px;
-      grid-template-columns:1fr;
-      /* eyebrow · phone (fills) · cards (auto, sits at bottom of viewport) */
-      grid-template-rows:auto 1fr auto;
-      gap:8px;padding:54px 14px 14px;
-      overflow:hidden;align-items:stretch;
+      display:block;                /* not grid — phone + cards are absolute */
+      padding:60px 14px 20px;
+      overflow:hidden;
     }
     .studio-stage::before,.studio-stage::after{display:none}
+
     .studio-eyebrow{
-      position:relative;top:0;left:0;transform:none;
-      align-self:center;justify-self:center;white-space:normal;
+      position:absolute;
+      top:18px;left:50%;transform:translateX(-50%);
+      white-space:normal;max-width:88%;text-align:center;
       font-size:9px;letter-spacing:.16em;padding:6px 12px;
-      grid-row:1;
-      max-width:90%;text-align:center;
+      z-index:5;
     }
     .studio-progress{display:block}
-    .studio-phone-wrap{
-      grid-row:2;justify-content:center;padding:0;
-      align-items:center;
-    }
-    /* Phone is the centerpiece — fills the available vertical band so the
-       device frame reads at "showroom" scale before the cards stage in. */
-    .studio-phone{
-      width:min(300px, 78vw);
-      height:min(640px, calc(78vh - 70px));
-      max-height:calc(78vh - 70px);
-    }
-    .studio-phone::before{width:84px;height:22px;border-radius:13px;top:18px}
-    .studio-phone::after{top:24px;width:8px;height:8px;margin-right:-28px}
-    .studio-statusbar{padding:14px 24px 0;font-size:13px;height:42px}
-    .studio-tape{padding-top:42px}
 
-    /* Cards section: sits in the bottom band of the stage. Hidden at rest
-       (translated down + faded). JS adds .cards-on once scroll progress
-       enters the cards phase — they slide up and become readable. */
-    .studio-cards{
-      grid-row:3;padding:0;height:auto;min-height:0;
+    /* Phone phase — fills the band below the eyebrow.
+       transform:translate3d on the .phase-cards swap so it's GPU-composited. */
+    .studio-phone-wrap{
+      position:absolute;
+      top:64px;left:14px;right:14px;bottom:36px;
+      display:flex;align-items:center;justify-content:center;
+      padding:0;
+      transition:transform .55s cubic-bezier(.4,.0,.2,1), opacity .35s ease;
+      will-change:transform,opacity;
+    }
+    .studio-stage.phase-cards .studio-phone-wrap{
+      transform:translate3d(0,-110%,0);
       opacity:0;
-      transform:translateY(24px);
-      transition:opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);
-      will-change:opacity,transform;
+      pointer-events:none;
     }
-    .studio-cards.cards-on{
+    .studio-phone{
+      /* Maximize: width up to 96% of viewport, height fills nearly the full
+         band between the eyebrow and the page progress bar. */
+      width:min(380px, 96vw);
+      height:min(800px, calc(100vh - 140px));
+      max-height:calc(100vh - 140px);
+    }
+    .studio-phone::before{width:90px;height:26px;border-radius:14px;top:20px}
+    .studio-phone::after{top:26px;width:8px;height:8px;margin-right:-32px}
+    .studio-statusbar{padding:18px 28px 0;font-size:13px;height:48px}
+    .studio-tape{padding-top:48px}
+
+    /* Cards phase — same band as the phone, slides up from below at phase swap. */
+    .studio-cards{
+      position:absolute;
+      top:64px;left:14px;right:14px;bottom:36px;
+      padding:0;
+      display:flex;flex-direction:column;
+      transform:translate3d(0,110%,0);
+      opacity:0;
+      transition:transform .55s cubic-bezier(.4,.0,.2,1), opacity .35s ease .1s;
+      will-change:transform,opacity;
+      pointer-events:none;
+    }
+    .studio-stage.phase-cards .studio-cards{
+      transform:translate3d(0,0,0);
       opacity:1;
-      transform:translateY(0);
+      pointer-events:auto;
     }
-    .studio-cards-intro{margin-bottom:6px;max-width:none}
-    .studio-cards-intro .lbl{margin-bottom:4px;font-size:9px}
-    .studio-cards-intro h3{font-size:16px;line-height:1.15}
-    .studio-cards-intro p{display:none}
-    .studio-card-deck{max-width:none;max-height:30vh}
-    .studio-card{padding:10px 13px;margin-bottom:6px}
-    .studio-card .num{font-size:24px}
-    .studio-card .lead-body{font-size:12.5px;line-height:1.35}
-    .studio-card .card-head{font-size:8.5px;letter-spacing:.16em;margin-bottom:8px}
+
+    .studio-cards-intro{margin-bottom:14px;max-width:none;flex-shrink:0}
+    .studio-cards-intro .lbl{margin-bottom:8px;font-size:9.5px}
+    .studio-cards-intro h3{font-size:22px;line-height:1.12}
+    .studio-cards-intro p{
+      display:block;
+      margin-top:8px;
+      font-size:13px;
+      line-height:1.5;
+      color:var(--grey-60);
+      max-width:none;
+    }
+
+    /* Card deck fills the rest of the band, scrolls via deck-inner translate */
+    .studio-card-deck{
+      max-width:none;
+      flex:1;min-height:0;
+    }
+    .studio-card{padding:14px 16px;margin-bottom:10px}
+    .studio-card .num{font-size:30px}
+    .studio-card .lead-body{font-size:14px;line-height:1.4}
+    .studio-card .card-head{font-size:9.5px;letter-spacing:.18em;margin-bottom:10px}
+    .studio-card .loc-row{font-size:13px;padding:8px 0}
+    .studio-card .loc-row .v{font-size:11.5px}
+    .studio-card .pair-row{font-size:13px;padding:7px 0}
+    .studio-card .pair-row .v{font-size:11.5px}
   }
   @media (prefers-reduced-motion: reduce){
     .ph-scan .viewfinder .scanline{animation:none;top:50%}
@@ -2606,34 +2644,57 @@
       flex:0 0 20px;width:20px;height:20px;font-size:10px;
     }
 
-    /* --- WHY NOW --- */
+    /* --- WHY NOW ---
+       Diagram on mobile becomes a normal vertical flow: the product node
+       sits at the top (with QR / NFC / SKU chips around it), then the
+       three module cards stack below as full-width readable cards.
+       Connecting-line SVG + grid backdrop are hidden — they only made
+       sense in the wider desktop diagram. */
     .whynow{padding:80px 0}
     .whynow .label-strip{margin-bottom:32px;font-size:9.5px;letter-spacing:.18em}
     .whynow-stage{gap:36px}
     .whynow-head p{font-size:14.5px;margin-top:18px}
+
     .whynow-diagram{
-      aspect-ratio:1/1.1;background-size:36px 36px;
-      margin:0 -10px;
+      position:relative;
+      aspect-ratio:auto;
+      max-width:none;
+      margin:0;
+      padding:160px 0 0;
+      display:flex;flex-direction:column;
+      gap:14px;
     }
+    .whynow-diagram::before,
+    .whynow-diagram svg{display:none}
+
     .whynow-product{
-      left:50%;top:18%;
-      width:96px;height:96px;
+      position:absolute;
+      left:50%;top:24px;transform:translateX(-50%);
+      width:108px;height:108px;
     }
-    .whynow-product svg{width:50px;height:50px}
-    .whynow-product .tag{font-size:9px;top:calc(100% + 10px)}
-    .whynow-chip{font-size:8px;letter-spacing:.16em;padding:4px 8px}
-    .whynow-chip.qr {left:6%; top:8%}
-    .whynow-chip.nfc{left:auto;right:6%;top:8%}
-    .whynow-chip.sku{left:50%;top:35%;transform:translateX(-50%)}
+    .whynow-product svg{width:58px;height:58px;display:block}
+    .whynow-product .tag{font-size:9px;top:calc(100% + 12px);letter-spacing:.18em}
+
+    .whynow-chip{
+      position:absolute;
+      font-size:8.5px;letter-spacing:.16em;padding:4px 9px;
+    }
+    .whynow-chip.qr {left:10%;  top:50px;right:auto}
+    .whynow-chip.nfc{right:10%; left:auto;top:50px}
+    .whynow-chip.sku{
+      left:50%;top:142px;
+      transform:translateX(-50%);
+    }
+
+    /* Module cards — stacked, full-width, fully readable */
     .whynow-mod{
-      right:auto;left:0;width:100%;min-width:0;
-      padding:14px 16px;
+      position:relative !important;
+      top:auto !important;right:auto;left:auto;
+      width:100%;min-width:0;
+      padding:18px 18px 20px;
     }
-    .whynow-mod.m1{top:48%}
-    .whynow-mod.m2{top:65%}
-    .whynow-mod.m3{top:82%}
-    .whynow-mod h4{font-size:17px}
-    .whynow-mod .desc{font-size:12px}
+    .whynow-mod h4{font-size:18px;line-height:1.18}
+    .whynow-mod .desc{font-size:13.5px;line-height:1.5;max-width:none}
     .whynow-cards{
       grid-template-columns:1fr;
       margin-top:48px;
