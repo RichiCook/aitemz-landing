@@ -509,6 +509,26 @@
     gap:0;
     border-top:1px solid var(--line);
     margin-top:32px;
+    position:relative;
+  }
+  /* 4-column variant for the colorful refresh */
+  .caps.caps-4{grid-template-columns:repeat(4,1fr)}
+  /* Subtle brand gradient hairline atop the row — gives the whole strip a
+     warmer entrance and visually ties it to the gradient italic in the heading. */
+  .caps::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;top:-1px;height:1px;
+    background:linear-gradient(90deg,
+      transparent 0%,
+      rgba(238,107,207,0) 8%,
+      rgba(238,107,207,0.55) 30%,
+      rgba(245,148,148,0.55) 50%,
+      rgba(252,194,76,0.55) 70%,
+      rgba(252,194,76,0) 92%,
+      transparent 100%);
+    opacity:.65;
+    pointer-events:none;
   }
   .cap{
     grid-column:span 1;
@@ -551,6 +571,24 @@
     opacity:.5;transition:opacity .3s,gap .3s;
   }
   .cap:hover .cap-arrow{opacity:1;gap:10px}
+
+  /* Eyebrow tag with gradient dot — used by the colorful capabilities refresh.
+     Replaces the old arrow CTA at the bottom of each card. */
+  .cap-tag{
+    margin-top:20px;
+    font-family:var(--mono);font-size:10px;font-weight:500;
+    letter-spacing:.22em;text-transform:uppercase;
+    color:var(--grey-60);
+    display:inline-flex;align-items:center;gap:10px;
+    transition:color .3s ease;
+  }
+  .cap-tag .d{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--grad);
+    box-shadow:0 0 10px rgba(238,107,207,0.45);
+    flex-shrink:0;
+  }
+  .cap:hover .cap-tag{color:var(--white)}
 
   /* ---------- QUOTE / PRINCIPLE ----------
      Two stacked headings. The second ("It reveals itself.") starts hidden
