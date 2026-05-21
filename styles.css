@@ -155,7 +155,10 @@
     margin:0;
     display:grid;
     grid-template-columns:repeat(5,1fr);
-    grid-template-rows:auto 1fr auto;
+    /* Rows: meta(top) · flex spacer · title · foot · flex spacer
+       The two 1fr rows above and below the title/foot pair center the pair
+       vertically in the available space while keeping the meta pinned top. */
+    grid-template-rows:auto 1fr auto auto 1fr;
     gap:24px;
     align-items:end;
     overflow:hidden;
@@ -253,7 +256,7 @@
 
   .hero-meta{
     grid-column:1 / span 5;
-    grid-row:1;
+    grid-row:1;                /* top */
     display:flex;justify-content:flex-end;align-items:flex-start;
     margin-bottom:0;
     opacity:0;transform:translateY(12px);
@@ -287,7 +290,7 @@
 
   .hero-title{
     grid-column:1 / span 5;
-    grid-row:2;
+    grid-row:3;                /* sandwiched between two 1fr spacers → centered */
     align-self:end;
     font-family:var(--aitemz);
     font-weight:300;
@@ -333,7 +336,7 @@
 
   .hero-foot{
     grid-column:1 / span 5;
-    grid-row:3;
+    grid-row:4;                /* immediately under the title */
     display:grid;
     grid-template-columns:repeat(5,1fr);
     gap:24px;
@@ -346,7 +349,7 @@
     grid-column:1 / span 3;
     font-family:var(--aitemz);
     font-weight:300;
-    font-size:clamp(17px, min(1.5vw, 2.4vh), 22px);
+    font-size:clamp(19px, min(1.8vw, 2.9vh), 26px);
     line-height:1.4;
     color:var(--grey);
     max-width:62ch;
@@ -2340,11 +2343,16 @@
     .hero{
       padding:120px 20px 56px;
       grid-template-columns:1fr;
+      /* reset the desktop 5-row template — mobile flows naturally */
+      grid-template-rows:auto auto auto;
       gap:0;
       min-height:calc(100svh - var(--ticker-h, 54px));
       align-items:start;
     }
     .hero-meta,.hero-title,.hero-foot{grid-column:1}
+    .hero-meta{grid-row:1}
+    .hero-title{grid-row:2}
+    .hero-foot{grid-row:3}
     .hero-meta{margin-bottom:64px;justify-content:flex-start}
     .hero-meta .status{text-align:left;font-size:9.5px;letter-spacing:.16em}
     .hero-title{
