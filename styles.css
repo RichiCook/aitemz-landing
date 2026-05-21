@@ -29,7 +29,7 @@
   }
 
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth;overflow-x:hidden;max-width:100%}
+  html{scroll-behavior:smooth;overflow-x:clip;max-width:100%}
   /* anchor offset so jump targets clear the fixed nav + sticky ticker */
   section[id], header[id]{scroll-margin-top:var(--sticky-offset, 130px)}
   body{
@@ -39,7 +39,7 @@
     font-weight:400;
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
+    overflow-x:clip;
     max-width:100%;
     letter-spacing:-0.005em;
     /* hide page scrollbar — page still scrolls, just no visible track */
@@ -989,8 +989,10 @@
   .what-we-do{
     position:relative;
     z-index:2;
-    transform:translate3d(0, var(--wwd-lift, 0px), 0);
-    will-change:transform;
+    /* Parallax lift is applied via margin-top instead of transform, because
+       transform creates a new containing block that breaks position:sticky
+       on the comparison column heads inside this section. */
+    margin-top:var(--wwd-lift, 0px);
   }
 
   /* ---------- LIVE STUDIO — SCROLLYTELLING ----------
