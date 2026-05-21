@@ -121,6 +121,7 @@
         document.removeEventListener('keydown', onKey);
       }
     });
+  })();
 
 /* ===== MAIN PAGE BEHAVIORS ===== */
 
