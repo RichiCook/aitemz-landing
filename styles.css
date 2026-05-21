@@ -1575,78 +1575,83 @@
     .studio-cards-intro h3{font-size:30px}
   }
   @media (max-width:780px){
-    /* MOBILE STUDIO — two-phase sticky stage.
-       PHASE 1 (p: 0 → 0.5): the phone fills the entire viewport and the
-       internal tape scrolls through its 4 screens.
-       PHASE 2 (p: 0.5 → 1): the phone slides up out of view and the cards
-       section slides up to claim the full viewport, scrolling through all
-       8 insight cards.
-       The .studio-stage element gets a .phase-cards class from the scroll
-       handler at the boundary, which drives the CSS transform swap. */
-    .studio-scroll{height:700vh;background:none}
+    /* MOBILE STUDIO — scroll-hijack approach.
+       The phone fills the viewport; when it enters full view the page scroll
+       locks and wheel / touch events drive the internal phone tape instead.
+       Once the tape reaches the bottom, page scroll unlocks and the user
+       continues into the analytics cards which sit in normal flow below. */
+    .studio-scroll{height:auto;background:none}
     .studio-stage{
-      position:sticky;top:0;height:100vh;min-height:600px;
-      display:block;                /* not grid — phone + cards are absolute */
-      padding:60px 14px 20px;
-      overflow:hidden;
+      position:relative;top:auto;
+      height:auto;min-height:auto;
+      display:flex;flex-direction:column;align-items:center;
+      padding:0 14px;
+      overflow:visible;
     }
     .studio-stage::before,.studio-stage::after{display:none}
 
     .studio-eyebrow{
-      position:absolute;
-      top:18px;left:50%;transform:translateX(-50%);
-      white-space:normal;max-width:88%;text-align:center;
-      font-size:9px;letter-spacing:.16em;padding:6px 12px;
+      position:relative;top:auto;left:auto;transform:none;
+      margin:18px auto 14px;
+      white-space:nowrap;text-align:center;
+      font-size:9px;letter-spacing:.08em;padding:7px 18px;
       z-index:5;
     }
-    .studio-progress{display:block}
+    .studio-progress{display:block;position:relative;margin-top:0}
 
-    /* Phone phase — fills the band below the eyebrow.
-       transform:translate3d on the .phase-cards swap so it's GPU-composited. */
+    /* Phone area — fills the viewport minus the eyebrow. */
     .studio-phone-wrap{
-      position:absolute;
-      top:64px;left:14px;right:14px;bottom:36px;
+      position:relative;
+      width:100%;
+      height:calc(100svh - 90px);
+      min-height:520px;
       display:flex;align-items:center;justify-content:center;
       padding:0;
-      transition:transform .55s cubic-bezier(.4,.0,.2,1), opacity .35s ease;
-      will-change:transform,opacity;
+      transition:none;
+      will-change:auto;
     }
+    /* Disable the old phase-cards transforms */
     .studio-stage.phase-cards .studio-phone-wrap{
-      transform:translate3d(0,-110%,0);
-      opacity:0;
-      pointer-events:none;
+      transform:none;opacity:1;pointer-events:auto;
     }
     .studio-phone{
-      /* Maximize: width up to 96% of viewport, height fills nearly the full
-         band between the eyebrow and the page progress bar. */
       width:min(380px, 96vw);
-      height:min(800px, calc(100vh - 140px));
-      max-height:calc(100vh - 140px);
+      height:min(820px, calc(100svh - 100px));
+      max-height:calc(100svh - 100px);
     }
     .studio-phone::before{width:90px;height:26px;border-radius:14px;top:20px}
     .studio-phone::after{top:26px;width:8px;height:8px;margin-right:-32px}
     .studio-statusbar{padding:18px 28px 0;font-size:13px;height:48px}
     .studio-tape{padding-top:48px}
 
-    /* Cards phase — same band as the phone, slides up from below at phase swap. */
-    .studio-cards{
-      position:absolute;
-      top:64px;left:14px;right:14px;bottom:36px;
-      padding:0;
-      display:flex;flex-direction:column;
-      transform:translate3d(0,110%,0);
-      opacity:0;
-      transition:transform .55s cubic-bezier(.4,.0,.2,1), opacity .35s ease .1s;
-      will-change:transform,opacity;
-      pointer-events:none;
-    }
-    .studio-stage.phase-cards .studio-cards{
-      transform:translate3d(0,0,0);
-      opacity:1;
-      pointer-events:auto;
+    /* Scroll-lock indicator — subtle gradient hint at bottom of phone
+       that fades when tape reaches the end */
+    .studio-phone-screen::after{
+      content:"";position:absolute;bottom:0;left:0;right:0;
+      height:40px;z-index:2;pointer-events:none;
+      background:linear-gradient(to top, rgba(240,238,234,.6), transparent);
+      opacity:var(--scroll-hint, 1);
+      transition:opacity .3s ease;
     }
 
-    .studio-cards-intro{margin-bottom:14px;max-width:none;flex-shrink:0}
+    /* Cards in normal flow below the phone */
+    .studio-cards{
+      position:relative;
+      width:100%;
+      padding:40px 0 60px;
+      display:flex;flex-direction:column;
+      transform:none;
+      opacity:1;
+      transition:none;
+      will-change:auto;
+      pointer-events:auto;
+    }
+    /* Disable the old phase-cards transforms */
+    .studio-stage.phase-cards .studio-cards{
+      transform:none;opacity:1;pointer-events:auto;
+    }
+
+    .studio-cards-intro{margin-bottom:18px;max-width:none;flex-shrink:0}
     .studio-cards-intro .lbl{margin-bottom:8px;font-size:9.5px}
     .studio-cards-intro h3{font-size:22px;line-height:1.12}
     .studio-cards-intro p{
@@ -1658,10 +1663,15 @@
       max-width:none;
     }
 
-    /* Card deck fills the rest of the band, scrolls via deck-inner translate */
+    /* Cards stack naturally — no deck-inner translate needed */
     .studio-card-deck{
       max-width:none;
-      flex:1;min-height:0;
+      overflow:visible;
+      mask-image:none;-webkit-mask-image:none;
+    }
+    .studio-card-deck-inner{
+      transform:none !important;       /* override JS deck-inner translate */
+      will-change:auto;
     }
     .studio-card{padding:14px 16px;margin-bottom:10px}
     .studio-card .num{font-size:30px}
