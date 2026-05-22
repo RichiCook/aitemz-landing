@@ -97,13 +97,12 @@
       schedule(800,  function(){ setLabel('Content generated'); });
       schedule(1300, dismiss);
     } else {
-      // Five-state narrative: scan → AI processes → content ready.
-      schedule(500,  function(){ setLabel('Gathering data'); });
-      schedule(1000, function(){ setLabel('Processing data'); });
-      schedule(1500, function(){ setLabel('Generating content'); });
-      schedule(2000, function(){ setLabel('Content generated'); });
-      schedule(2350, function(){ intro.classList.add('activate'); });
-      schedule(2950, dismiss);
+      // Four-state narrative: gather (with scan sweep) → process → generate → ready.
+      schedule(1200, function(){ setLabel('Processing data'); });
+      schedule(1700, function(){ setLabel('Generating content'); });
+      schedule(2200, function(){ setLabel('Content generated'); });
+      schedule(2550, function(){ intro.classList.add('activate'); });
+      schedule(3150, dismiss);
     }
 
     function dismiss(){
