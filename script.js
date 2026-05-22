@@ -676,10 +676,23 @@
       lastP = p;
 
       const isMobile = window.matchMedia('(max-width:780px)').matches;
-      const phonePhaseEnd = isMobile ? 0.55 : 0.45;
+
+      // Three independent motion ranges so each animation has the floor
+      // to itself — no overlap means no perceived "lag" from competing
+      // transforms running at the same scroll position.
+      //   tapeEnd      — when the phone tape finishes its 4-screen scroll
+      //   swap window  — when phone slides out and cards slide in (mobile)
+      //   deck range   — when the cards deck-inner translates upward
+      // On desktop, swap doesn't happen; tape + deck overlap is intentional
+      // because both are visible side-by-side in the grid.
+      const tapeEnd   = isMobile ? 0.50 : 0.45;
+      const swapStart = 0.50;   // mobile only
+      const swapEnd   = 0.60;   // mobile only
+      const deckStart = isMobile ? 0.64 : 0.45;
+      const deckEnd   = isMobile ? 0.98 : 1.00;
 
       // Phone tape advances during the phone phase.
-      const phoneProgress = Math.min(1, p / phonePhaseEnd);
+      const phoneProgress = Math.min(1, p / tapeEnd);
       const scroller = tape.parentElement;
       const tapeH    = tape.scrollHeight;
       const viewH    = scroller.clientHeight;
@@ -687,14 +700,13 @@
       tape.style.transform = `translate3d(0, ${(-phoneProgress * maxTape).toFixed(2)}px, 0)`;
 
       // Cards deck inner translates so the 8 cards scroll through the
-      // available cards-deck height as the user keeps scrolling past the
-      // phone phase. Driven on both desktop AND mobile so the cards
-      // section consumes the rest of the studio-scroll height — without
-      // it, the user would scroll past empty cards and into the next
-      // section before all 8 cards have been seen.
+      // available cards-deck height as the user keeps scrolling. Holds at
+      // position 0 until deckStart — that way the first card (e.g.,
+      // 128,412 scans) is fully visible the moment the swap completes,
+      // rather than already being scrolled past.
       const deckInner = document.getElementById('studioCardsInner');
       if (deckInner){
-        const deckProgress = Math.max(0, (p - phonePhaseEnd) / (1 - phonePhaseEnd));
+        const deckProgress = Math.max(0, Math.min(1, (p - deckStart) / (deckEnd - deckStart)));
         const deckHost = deckInner.parentElement;
         const innerH   = deckInner.scrollHeight;
         const hostH    = deckHost.clientHeight;
@@ -703,12 +715,8 @@
       }
 
       // Mobile phase swap — phone slides up, cards slide in, both
-      // proportionally tied to scroll progress (no CSS animation). The
-      // swap window is a short 10% scroll band centered on phonePhaseEnd
-      // so the transition is gradual and feels continuous with scrolling.
+      // proportionally tied to scroll progress (no CSS animation).
       if (isMobile){
-        const swapStart = phonePhaseEnd - 0.05;
-        const swapEnd   = phonePhaseEnd + 0.05;
         const swapT = Math.max(0, Math.min(1, (p - swapStart) / (swapEnd - swapStart)));
         const phoneWrap = studio.querySelector('.studio-phone-wrap');
         const cardsEl   = studio.querySelector('.studio-cards');
@@ -723,11 +731,11 @@
       }
 
       // Card reveals — 8 thresholds. Cards 1–4 during phone phase, cards
-      // 5–8 once the deck takes over.
+      // 5–8 spread across the deck-scroll range.
       cards.forEach((card, i) => {
         const threshold = i < 4
           ? 0.05 + i * 0.09
-          : phonePhaseEnd + (i - 4) * 0.10;
+          : deckStart + (i - 4) * 0.08;
         card.classList.toggle('in', p >= threshold);
       });
 
