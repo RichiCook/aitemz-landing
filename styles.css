@@ -1622,7 +1622,7 @@
          Phase 1 (progress 0 → 0.5): phone fills the stage, tape scrolls.
          Phase 2 (progress 0.5 → 1): phone slides up out of view, cards slide
                                      up from below into the stage. */
-    .studio-scroll{height:400svh;background:var(--black)}
+    .studio-scroll{height:500svh;background:var(--black)}
     .studio-stage{
       position:sticky;top:0;
       height:100svh;min-height:600px;
@@ -1671,7 +1671,9 @@
     .studio-tape{padding-top:48px}
 
     /* Cards — absolutely positioned in the same space as the phone, slides
-       up from below into the stage when tape is exhausted. */
+       up from below into the stage when tape is exhausted. The deck-inner
+       transform (driven by JS in update()) scrolls the 8 cards through the
+       cards-deck during phase 2. */
     .studio-cards{
       position:absolute;
       top:0;left:14px;right:14px;bottom:24px;
@@ -1682,11 +1684,7 @@
       transition:transform .5s cubic-bezier(.4,.0,.2,1), opacity .4s ease .05s;
       will-change:transform,opacity;
       pointer-events:none;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:none;
     }
-    .studio-cards::-webkit-scrollbar{display:none}
     .studio-stage.phase-cards .studio-cards{
       transform:translate3d(0, 0, 0);
       opacity:1;
@@ -1705,15 +1703,18 @@
       max-width:none;
     }
 
+    /* Card deck: fills the rest of the stage; deck-inner translates upward
+       to bring later cards into view as scroll progresses through phase 2. */
     .studio-card-deck{
       max-width:none;
       flex:1;min-height:0;
-      overflow:visible;
-      mask-image:none;-webkit-mask-image:none;
+      overflow:hidden;
+      mask-image:linear-gradient(180deg, transparent 0, #000 6%, #000 88%, transparent 100%);
+      -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 6%, #000 88%, transparent 100%);
     }
     .studio-card-deck-inner{
-      transform:none !important;
-      will-change:auto;
+      will-change:transform;
+      padding-bottom:24px;
     }
     .studio-card{padding:14px 16px;margin-bottom:10px}
     .studio-card .num{font-size:30px}

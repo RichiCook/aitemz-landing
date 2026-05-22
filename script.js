@@ -686,11 +686,14 @@
       const maxTape  = Math.max(0, tapeH - viewH);
       tape.style.transform = `translate3d(0, ${(-phoneProgress * maxTape).toFixed(2)}px, 0)`;
 
-      // Cards deck — only animated on desktop where cards stay visible the
-      // entire time. On mobile, cards are absolutely positioned in the
-      // sticky stage and slide in via the .phase-cards class.
+      // Cards deck inner translates so the 8 cards scroll through the
+      // available cards-deck height as the user keeps scrolling past the
+      // phone phase. Driven on both desktop AND mobile so the cards
+      // section consumes the rest of the studio-scroll height — without
+      // it, the user would scroll past empty cards and into the next
+      // section before all 8 cards have been seen.
       const deckInner = document.getElementById('studioCardsInner');
-      if (deckInner && !isMobile){
+      if (deckInner){
         const deckProgress = Math.max(0, (p - phonePhaseEnd) / (1 - phonePhaseEnd));
         const deckHost = deckInner.parentElement;
         const innerH   = deckInner.scrollHeight;
