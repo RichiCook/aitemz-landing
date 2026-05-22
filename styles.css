@@ -3181,7 +3181,7 @@
     background:linear-gradient(90deg, transparent, #ee6bcf 30%, #fcc24c 70%, transparent);
     box-shadow:0 0 24px rgba(238,107,207,.55), 0 0 8px rgba(252,194,76,.6);
     opacity:0;
-    animation:qrScan 1.1s 1.3s forwards cubic-bezier(.5,0,.5,1);
+    animation:qrScan 0.55s 0.15s forwards cubic-bezier(.5,0,.5,1);
     pointer-events:none;
   }
   @keyframes qrScan{

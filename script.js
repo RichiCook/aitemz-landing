@@ -75,8 +75,8 @@
         var m = document.createElement('i');
         if (g[y][x]) m.className = 'on';
         var d = Math.hypot(x-c, y-c);
-        // 80ms → 850ms — center first, corners last
-        m.style.setProperty('--d', Math.round(80 + (d/maxD)*770));
+        // 40ms → 400ms — center first, corners last (faster scan-in)
+        m.style.setProperty('--d', Math.round(40 + (d/maxD)*360));
         frag.appendChild(m);
       }
     }
@@ -94,17 +94,16 @@
 
     if (prefersReduced){
       // Reduced motion: hold a static frame, then fade. No scan, no burst.
-      schedule(900,  function(){ setLabel('Content generated'); });
-      schedule(1400, dismiss);
+      schedule(800,  function(){ setLabel('Content generated'); });
+      schedule(1300, dismiss);
     } else {
-      // Six-state narrative: scan → AI processes → content ready.
-      schedule(600,  function(){ setLabel('Scanning'); });
-      schedule(1200, function(){ setLabel('Gathering data'); });
-      schedule(1800, function(){ setLabel('Processing data'); });
-      schedule(2400, function(){ setLabel('Generating content'); });
-      schedule(3000, function(){ setLabel('Content generated'); });
-      schedule(3350, function(){ intro.classList.add('activate'); });
-      schedule(3950, dismiss);
+      // Five-state narrative: scan → AI processes → content ready.
+      schedule(500,  function(){ setLabel('Gathering data'); });
+      schedule(1000, function(){ setLabel('Processing data'); });
+      schedule(1500, function(){ setLabel('Generating content'); });
+      schedule(2000, function(){ setLabel('Content generated'); });
+      schedule(2350, function(){ intro.classList.add('activate'); });
+      schedule(2950, dismiss);
     }
 
     function dismiss(){
