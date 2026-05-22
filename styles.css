@@ -1643,7 +1643,11 @@
       backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     }
     .studio-eyebrow .eyebrow-tail{display:none}
-    .studio-progress{display:block;position:absolute;bottom:0;left:0;right:0;z-index:9}
+    /* Hide the section-wide progress bar on mobile — it sits under the
+       phone frame as a stray gradient line, visually disconnected from
+       the phone itself. The lock+swap mechanic already communicates
+       progress on mobile. */
+    .studio-progress{display:none}
 
     /* Phone area — absolutely positioned to fill the entire stage. The
        transform is set frame-by-frame in JS based on scroll progress, so
@@ -1651,14 +1655,18 @@
     .studio-phone-wrap{
       position:absolute;
       top:0;left:14px;right:14px;bottom:0;
+      /* Bottom safe-area inset so the phone frame's rounded corner sits
+         comfortably above the iOS home indicator / Safari URL bar. */
+      padding-bottom:env(safe-area-inset-bottom, 0);
       display:flex;align-items:center;justify-content:center;
-      padding:0;
       will-change:transform;
     }
     .studio-phone{
       width:min(420px, 96vw);
-      height:min(900px, calc(100svh - 32px));
-      max-height:calc(100svh - 32px);
+      /* More breathing room: -56px so the phone's rounded bottom corner
+         doesn't touch the dynamic Safari URL bar / home indicator. */
+      height:min(900px, calc(100svh - 56px));
+      max-height:calc(100svh - 56px);
     }
     .studio-phone::before{width:90px;height:26px;border-radius:14px;top:20px}
     .studio-phone::after{top:26px;width:8px;height:8px;margin-right:-32px}
