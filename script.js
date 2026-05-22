@@ -658,11 +658,14 @@
       thesisIO.observe(block);
     })();
 
-    /* ---- DESKTOP scroll-driven update (unchanged) ---- */
+    /* ---- Scroll-driven update — works on both desktop and mobile ----
+       Same pattern: scroll position within the studio-scroll section drives
+       the phone tape, then the card deck. Mobile uses a slightly later
+       phase boundary (tape gets more scroll room) and adds the
+       `.phase-cards` class to the stage at that boundary to swap phone for
+       cards inside the sticky stage. */
     function update(){
       ticking = false;
-      const isMobile = window.matchMedia('(max-width:780px)').matches;
-      if (isMobile) return;  // mobile uses scroll-hijack, not scroll-progress
 
       const rect = studio.getBoundingClientRect();
       const total = rect.height - window.innerHeight;
@@ -672,8 +675,10 @@
       if (Math.abs(p - lastP) < 0.002) return;
       lastP = p;
 
-      const phonePhaseEnd = 0.45;
+      const isMobile = window.matchMedia('(max-width:780px)').matches;
+      const phonePhaseEnd = isMobile ? 0.55 : 0.45;
 
+      // Phone tape advances during the phone phase.
       const phoneProgress = Math.min(1, p / phonePhaseEnd);
       const scroller = tape.parentElement;
       const tapeH    = tape.scrollHeight;
@@ -681,8 +686,11 @@
       const maxTape  = Math.max(0, tapeH - viewH);
       tape.style.transform = `translate3d(0, ${(-phoneProgress * maxTape).toFixed(2)}px, 0)`;
 
+      // Cards deck — only animated on desktop where cards stay visible the
+      // entire time. On mobile, cards are absolutely positioned in the
+      // sticky stage and slide in via the .phase-cards class.
       const deckInner = document.getElementById('studioCardsInner');
-      if (deckInner){
+      if (deckInner && !isMobile){
         const deckProgress = Math.max(0, (p - phonePhaseEnd) / (1 - phonePhaseEnd));
         const deckHost = deckInner.parentElement;
         const innerH   = deckInner.scrollHeight;
@@ -691,11 +699,18 @@
         deckInner.style.transform = `translate3d(0, ${(-deckProgress * maxDeck).toFixed(2)}px, 0)`;
       }
 
-      const N = cards.length;
+      // Mobile phase swap — phone slides up, cards slide in.
+      if (isMobile){
+        const stage = studio.querySelector('.studio-stage');
+        if (stage) stage.classList.toggle('phase-cards', p >= phonePhaseEnd);
+      }
+
+      // Card reveals — 8 thresholds. Cards 1–4 during phone phase, cards
+      // 5–8 once the deck takes over.
       cards.forEach((card, i) => {
         const threshold = i < 4
           ? 0.05 + i * 0.09
-          : 0.50 + (i - 4) * 0.10;
+          : phonePhaseEnd + (i - 4) * 0.10;
         card.classList.toggle('in', p >= threshold);
       });
 
@@ -711,189 +726,6 @@
     window.addEventListener('resize', () => { lastP = -1; update(); });
     update();
 
-    /* ---- MOBILE scroll-hijack system ---- */
-    (function mobileScrollHijack(){
-      if (!window.matchMedia('(max-width:780px)').matches) return;
-
-      const phoneWrap = studio.querySelector('.studio-phone-wrap');
-      const screen    = studio.querySelector('.studio-phone-screen');
-      if (!phoneWrap || !tape || !screen) return;
-
-      let locked       = false;
-      let tapeOffset   = 0;
-      let maxTape      = 0;
-      let touchStartY  = 0;
-      let lastDir      = 1;     // 1 = scrolling down, -1 = scrolling up
-      const OVERSCROLL = 40;    // extra px of scroll after tape end before unlock
-      let overAccum    = 0;     // accumulator for overscroll buffer
-      let unlockDir    = 0;     // 0 = none, 1 = unlocked going down, -1 = unlocked going up
-
-      function computeMax(){
-        const tapeH = tape.scrollHeight;
-        const viewH = screen.clientHeight;
-        maxTape = Math.max(0, tapeH - viewH);
-      }
-
-      function applyTape(){
-        tape.style.transform = `translate3d(0, ${(-tapeOffset).toFixed(2)}px, 0)`;
-        // Update scroll-hint fade at bottom of phone
-        const ratio = maxTape > 0 ? tapeOffset / maxTape : 1;
-        screen.style.setProperty('--scroll-hint', ratio > 0.95 ? '0' : '1');
-        // Update progress bar
-        if (progress) {
-          const phoneRatio = maxTape > 0 ? (tapeOffset / maxTape) * 50 : 0;
-          progress.style.setProperty('--w', phoneRatio.toFixed(1) + '%');
-        }
-      }
-
-      function lockScroll(){
-        if (locked) return;
-        locked = true;
-        overAccum = 0;
-        computeMax();
-        // Use a class on html so it survives the cascade (overflow-x:clip in
-        // body/html stylesheet rules used to interfere with inline overflow).
-        // Also set touch-action:none on body to make sure mobile browsers
-        // don't keep handling the page scroll while we're in lock.
-        document.documentElement.classList.add('studio-locked');
-      }
-
-      function unlockScroll(){
-        if (!locked) return;
-        locked = false;
-        unlockDir = lastDir;   // remember direction so observer doesn't re-lock
-        document.documentElement.classList.remove('studio-locked');
-      }
-
-      function handleDelta(dy){
-        if (!locked) return false;
-        lastDir = dy > 0 ? 1 : -1;
-
-        tapeOffset = Math.max(0, Math.min(maxTape, tapeOffset + dy));
-        applyTape();   // always update visual to the clamped position
-
-        // If tape hit a boundary, accumulate overscroll
-        if ((dy > 0 && tapeOffset >= maxTape) || (dy < 0 && tapeOffset <= 0)){
-          overAccum += Math.abs(dy);
-          if (overAccum >= OVERSCROLL){
-            unlockScroll();
-            return false;  // let this & subsequent events propagate naturally
-          }
-        } else {
-          overAccum = 0;
-        }
-
-        return true;  // consumed
-      }
-
-      // --- Wheel handler (desktop-in-mobile-viewport + trackpad) ---
-      function onWheel(e){
-        if (!locked) return;
-        if (handleDelta(e.deltaY)){
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-
-      // --- Touch handlers ---
-      function onTouchStart(e){
-        // Always capture start position so touchmove deltas are correct
-        touchStartY = e.touches[0].clientY;
-      }
-      function onTouchMove(e){
-        if (!locked) return;
-        const currentY = e.touches[0].clientY;
-        const dy = touchStartY - currentY;  // positive = scrolling down
-        touchStartY = currentY;
-        if (handleDelta(dy)){
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-
-      // Register with passive:false so we can preventDefault
-      document.addEventListener('wheel', onWheel, { passive: false });
-      document.addEventListener('touchstart', onTouchStart, { passive: true });
-      document.addEventListener('touchmove', onTouchMove, { passive: false });
-
-      // --- Positional, bi-directional lock trigger ---
-      // The phone-wrap is 100svh tall. Treat the moment its top crosses the
-      // viewport top as the lock event — in either scroll direction. Tape
-      // scrolling becomes a seamless continuation of page scroll: down
-      // advances the tape, up rewinds it, and the page resumes scrolling
-      // naturally when the tape exhausts in either direction.
-      function checkLock(){
-        if (locked) return;
-
-        const r = phoneWrap.getBoundingClientRect();
-        const vh = window.innerHeight;
-
-        // Lock band — tight zone around the moment the phone is settled at
-        // the top of the viewport. Narrow enough to feel intentional
-        // ("phone is now in position"), wide enough to catch normal scroll
-        // deltas without skipping over the trigger point.
-        const inLockBand = r.top <= 40 && r.top > -40;
-
-        // Reset guard zone: outside the lock band by a comfortable margin —
-        // the user has either not yet reached the phone, or has clearly
-        // exited past it. Safe to re-arm.
-        const outsideBand = r.top > 120 || r.top < -vh * 0.5;
-        if (outsideBand) unlockDir = 0;
-
-        if (inLockBand){
-          if (unlockDir !== 0) return;   // just unlocked in this pass
-          computeMax();
-          if (maxTape <= 0) return;
-          // If approaching from below (scrolling up), the tape should be at
-          // its end so scrolling up rewinds it. If approaching from above
-          // (scrolling down), it should be at the start. We use the current
-          // tapeOffset — preserved between locks so re-entries pick up where
-          // the user left off.
-          lockScroll();
-        }
-      }
-      window.addEventListener('scroll', checkLock, { passive: true });
-      // Belt and braces — also check on touchstart, some browsers fire scroll
-      // only AFTER touchmove starts which is too late to engage the lock.
-      document.addEventListener('touchstart', checkLock, { passive: true });
-
-      // --- Card reveals on scroll (lightweight check) ---
-      function checkCards(){
-        const vh = window.innerHeight;
-        cards.forEach(c => {
-          if (c.classList.contains('in')) return;
-          const r = c.getBoundingClientRect();
-          if (r.top < vh * 0.88) c.classList.add('in');
-        });
-      }
-      window.addEventListener('scroll', checkCards, { passive: true });
-
-      // --- Handle resize (orientation change, etc.) ---
-      // If user rotates to landscape or resizes past 780px,
-      // release the scroll lock so desktop behavior takes over.
-      const mobileQ = window.matchMedia('(max-width:780px)');
-      mobileQ.addEventListener('change', (e) => {
-        if (!e.matches) {
-          // No longer mobile — force-unlock and reset tape
-          unlockScroll();
-          unlockDir = 0;
-          tapeOffset = 0;
-          applyTape();
-        }
-      });
-      window.addEventListener('resize', () => {
-        if (!mobileQ.matches) return; // desktop handles its own resize
-        computeMax();
-        tapeOffset = Math.min(tapeOffset, maxTape);
-        applyTape();
-      });
-
-      // Set initial tape position
-      computeMax();
-      applyTape();
-      // Initial card check
-      checkCards();
-    })();
   })();
 
   /* --- waitlist submit --- */

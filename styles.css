@@ -30,13 +30,6 @@
 
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth;overflow-x:clip;max-width:100%}
-  /* Studio scroll-hijack lock: total scroll freeze for both axes plus
-     touch-action:none so iOS Safari doesn't keep handing scroll to native. */
-  html.studio-locked,html.studio-locked body{
-    overflow:hidden !important;
-    touch-action:none !important;
-    overscroll-behavior:none;
-  }
   /* anchor offset so jump targets clear the fixed nav + sticky ticker */
   section[id], header[id]{scroll-margin-top:var(--sticky-offset, 130px)}
   body{
@@ -1619,60 +1612,55 @@
     .studio-cards-intro h3{font-size:30px}
   }
   @media (max-width:780px){
-    /* MOBILE STUDIO — scroll-hijack approach.
-       The phone fills the viewport; when it enters full view the page scroll
-       locks and wheel / touch events drive the internal phone tape instead.
-       Once the tape reaches the bottom, page scroll unlocks and the user
-       continues into the analytics cards which sit in normal flow below. */
-    .studio-scroll{height:auto;background:none}
+    /* MOBILE STUDIO — same pattern as desktop: tall scroll container with a
+       sticky stage. Native page scroll drives the tape (no hijack), so iOS
+       momentum scroll works naturally and the experience is a seamless
+       continuation of the rest of the page scroll.
+
+       Two phases inside the sticky stage, swapped by a `.phase-cards` class
+       set in JS once tape is exhausted:
+         Phase 1 (progress 0 → 0.5): phone fills the stage, tape scrolls.
+         Phase 2 (progress 0.5 → 1): phone slides up out of view, cards slide
+                                     up from below into the stage. */
+    .studio-scroll{height:400svh;background:var(--black)}
     .studio-stage{
-      position:relative;top:auto;
-      height:auto;min-height:auto;
-      display:flex;flex-direction:column;align-items:center;
+      position:sticky;top:0;
+      height:100svh;min-height:600px;
+      display:block;
       padding:0 14px;
-      overflow:visible;
+      overflow:hidden;
     }
     .studio-stage::before,.studio-stage::after{display:none}
 
-    /* Eyebrow floats as a small chip just below the contracted nav.
-       Position:fixed so it stays glued to the viewport while the lock is
-       engaged and the page-scroll is frozen. */
+    /* Eyebrow floats as a small chip just below the contracted nav. */
     .studio-eyebrow{
-      position:fixed;
-      top:calc(var(--nav-h, 56px) + 10px);left:50%;transform:translateX(-50%);
+      position:absolute;top:14px;left:50%;transform:translateX(-50%);
       margin:0;
       white-space:nowrap;text-align:center;
       font-size:9px;letter-spacing:.08em;padding:6px 14px;
-      z-index:90;
+      z-index:10;
       background:rgba(7,7,7,0.7);
       backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-      opacity:0;pointer-events:none;
-      transition:opacity .3s ease;
     }
-    /* Trim the long tail on mobile — only show the lead label */
     .studio-eyebrow .eyebrow-tail{display:none}
-    /* Only show the eyebrow chip while the studio is the active lock target */
-    html.studio-locked .studio-eyebrow{opacity:1}
-    .studio-progress{display:block;position:relative;margin-top:0;z-index:9}
+    .studio-progress{display:block;position:absolute;bottom:0;left:0;right:0;z-index:9}
 
-    /* Phone area — FULL viewport height. The phone-wrap is the lock anchor:
-       when its top reaches viewport top, the page-scroll hijack engages. */
+    /* Phone area — absolutely positioned to fill the entire stage. */
     .studio-phone-wrap{
-      position:relative;
-      width:100%;
-      height:100svh;
-      min-height:600px;
+      position:absolute;
+      top:0;left:14px;right:14px;bottom:0;
       display:flex;align-items:center;justify-content:center;
       padding:0;
-      transition:none;
-      will-change:auto;
+      transition:transform .5s cubic-bezier(.4,.0,.2,1), opacity .4s ease;
+      will-change:transform,opacity;
     }
-    /* Disable the old phase-cards transforms */
+    /* Phase-cards: phone slides up out of view */
     .studio-stage.phase-cards .studio-phone-wrap{
-      transform:none;opacity:1;pointer-events:auto;
+      transform:translate3d(0, -110%, 0);
+      opacity:0;
+      pointer-events:none;
     }
     .studio-phone{
-      /* Almost full-bleed phone — fills the viewport with a slim border */
       width:min(420px, 96vw);
       height:min(900px, calc(100svh - 32px));
       max-height:calc(100svh - 32px);
@@ -1682,34 +1670,30 @@
     .studio-statusbar{padding:18px 28px 0;font-size:13px;height:48px}
     .studio-tape{padding-top:48px}
 
-    /* Scroll-lock indicator — subtle gradient hint at bottom of phone
-       that fades when tape reaches the end */
-    .studio-phone-screen::after{
-      content:"";position:absolute;bottom:0;left:0;right:0;
-      height:40px;z-index:2;pointer-events:none;
-      background:linear-gradient(to top, rgba(240,238,234,.6), transparent);
-      opacity:var(--scroll-hint, 1);
-      transition:opacity .3s ease;
-    }
-
-    /* Cards in normal flow below the phone */
+    /* Cards — absolutely positioned in the same space as the phone, slides
+       up from below into the stage when tape is exhausted. */
     .studio-cards{
-      position:relative;
-      width:100%;
-      padding:40px 0 60px;
+      position:absolute;
+      top:0;left:14px;right:14px;bottom:24px;
+      padding:60px 0 20px;
       display:flex;flex-direction:column;
-      transform:none;
+      transform:translate3d(0, 110%, 0);
+      opacity:0;
+      transition:transform .5s cubic-bezier(.4,.0,.2,1), opacity .4s ease .05s;
+      will-change:transform,opacity;
+      pointer-events:none;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+    }
+    .studio-cards::-webkit-scrollbar{display:none}
+    .studio-stage.phase-cards .studio-cards{
+      transform:translate3d(0, 0, 0);
       opacity:1;
-      transition:none;
-      will-change:auto;
       pointer-events:auto;
     }
-    /* Disable the old phase-cards transforms */
-    .studio-stage.phase-cards .studio-cards{
-      transform:none;opacity:1;pointer-events:auto;
-    }
 
-    .studio-cards-intro{margin-bottom:18px;max-width:none;flex-shrink:0}
+    .studio-cards-intro{margin-bottom:14px;max-width:none;flex-shrink:0}
     .studio-cards-intro .lbl{margin-bottom:8px;font-size:9.5px}
     .studio-cards-intro h3{font-size:22px;line-height:1.12}
     .studio-cards-intro p{
@@ -1721,14 +1705,14 @@
       max-width:none;
     }
 
-    /* Cards stack naturally — no deck-inner translate needed */
     .studio-card-deck{
       max-width:none;
+      flex:1;min-height:0;
       overflow:visible;
       mask-image:none;-webkit-mask-image:none;
     }
     .studio-card-deck-inner{
-      transform:none !important;       /* override JS deck-inner translate */
+      transform:none !important;
       will-change:auto;
     }
     .studio-card{padding:14px 16px;margin-bottom:10px}
