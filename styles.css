@@ -1645,20 +1645,15 @@
     .studio-eyebrow .eyebrow-tail{display:none}
     .studio-progress{display:block;position:absolute;bottom:0;left:0;right:0;z-index:9}
 
-    /* Phone area — absolutely positioned to fill the entire stage. */
+    /* Phone area — absolutely positioned to fill the entire stage. The
+       transform is set frame-by-frame in JS based on scroll progress, so
+       the slide-out is perfectly scroll-linked (no CSS transition). */
     .studio-phone-wrap{
       position:absolute;
       top:0;left:14px;right:14px;bottom:0;
       display:flex;align-items:center;justify-content:center;
       padding:0;
-      transition:transform .5s cubic-bezier(.4,.0,.2,1), opacity .4s ease;
-      will-change:transform,opacity;
-    }
-    /* Phase-cards: phone slides up out of view */
-    .studio-stage.phase-cards .studio-phone-wrap{
-      transform:translate3d(0, -110%, 0);
-      opacity:0;
-      pointer-events:none;
+      will-change:transform;
     }
     .studio-phone{
       width:min(420px, 96vw);
@@ -1670,10 +1665,9 @@
     .studio-statusbar{padding:18px 28px 0;font-size:13px;height:48px}
     .studio-tape{padding-top:48px}
 
-    /* Cards — absolutely positioned in the same space as the phone, slides
-       up from below into the stage when tape is exhausted. The deck-inner
-       transform (driven by JS in update()) scrolls the 8 cards through the
-       cards-deck during phase 2. */
+    /* Cards — absolutely positioned in the same space as the phone. The
+       transform + opacity are set frame-by-frame in JS based on scroll
+       progress, so the slide-in is perfectly scroll-linked. */
     .studio-cards{
       position:absolute;
       top:0;left:14px;right:14px;bottom:24px;
@@ -1681,14 +1675,8 @@
       display:flex;flex-direction:column;
       transform:translate3d(0, 110%, 0);
       opacity:0;
-      transition:transform .5s cubic-bezier(.4,.0,.2,1), opacity .4s ease .05s;
       will-change:transform,opacity;
       pointer-events:none;
-    }
-    .studio-stage.phase-cards .studio-cards{
-      transform:translate3d(0, 0, 0);
-      opacity:1;
-      pointer-events:auto;
     }
 
     .studio-cards-intro{margin-bottom:14px;max-width:none;flex-shrink:0}

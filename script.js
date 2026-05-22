@@ -702,10 +702,24 @@
         deckInner.style.transform = `translate3d(0, ${(-deckProgress * maxDeck).toFixed(2)}px, 0)`;
       }
 
-      // Mobile phase swap — phone slides up, cards slide in.
+      // Mobile phase swap — phone slides up, cards slide in, both
+      // proportionally tied to scroll progress (no CSS animation). The
+      // swap window is a short 10% scroll band centered on phonePhaseEnd
+      // so the transition is gradual and feels continuous with scrolling.
       if (isMobile){
-        const stage = studio.querySelector('.studio-stage');
-        if (stage) stage.classList.toggle('phase-cards', p >= phonePhaseEnd);
+        const swapStart = phonePhaseEnd - 0.05;
+        const swapEnd   = phonePhaseEnd + 0.05;
+        const swapT = Math.max(0, Math.min(1, (p - swapStart) / (swapEnd - swapStart)));
+        const phoneWrap = studio.querySelector('.studio-phone-wrap');
+        const cardsEl   = studio.querySelector('.studio-cards');
+        if (phoneWrap) phoneWrap.style.transform =
+          `translate3d(0, ${(-swapT * 110).toFixed(2)}%, 0)`;
+        if (cardsEl) {
+          cardsEl.style.transform =
+            `translate3d(0, ${((1 - swapT) * 110).toFixed(2)}%, 0)`;
+          cardsEl.style.opacity = swapT.toFixed(3);
+          cardsEl.style.pointerEvents = swapT > 0.5 ? 'auto' : 'none';
+        }
       }
 
       // Card reveals — 8 thresholds. Cards 1–4 during phone phase, cards
