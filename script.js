@@ -138,11 +138,23 @@
 
 /* ===== MAIN PAGE BEHAVIORS ===== */
 
-  /* --- nav scroll state --- */
+  /* --- nav scroll state ---
+     The nav grows at the top of the page and contracts after 40px of
+     scroll. We track its current height in --nav-h so sticky elements
+     below (marquee, comparison heads) snap to the correct offset. */
   const nav = document.getElementById('nav');
+  const updateNavH = () => {
+    document.documentElement.style.setProperty(
+      '--nav-h', nav.getBoundingClientRect().height + 'px'
+    );
+  };
+  updateNavH();
   window.addEventListener('scroll', () => {
     nav.classList.toggle('scrolled', window.scrollY > 40);
+    // Wait for the size transition to finish (.45s) before remeasuring
+    setTimeout(updateNavH, 460);
   }, {passive:true});
+  window.addEventListener('resize', updateNavH);
 
   /* --- marquee items (links to in-page sections) --- */
   const marqueeItems = [

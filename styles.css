@@ -85,27 +85,39 @@
   /* ---------- NAV ---------- */
   nav{
     position:fixed;top:0;left:0;right:0;z-index:100;
-    padding:22px 40px;
+    padding:26px 40px;
     display:flex;justify-content:space-between;align-items:center;
-    transition:background .4s, border-color .4s, backdrop-filter .4s;
+    transition:
+      padding .45s cubic-bezier(.4,.0,.2,1),
+      background .4s, border-color .4s, backdrop-filter .4s;
     border-bottom:1px solid transparent;
   }
   nav.scrolled{
+    padding:14px 40px;
     background:rgba(21,21,21,0.86);
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
     border-bottom-color:var(--line);
   }
   .brand{
-    display:flex;align-items:center;gap:14px;
+    display:flex;align-items:center;gap:18px;
     text-decoration:none;color:var(--white);
     line-height:1;
+    /* Smooth lockup shrink on scroll. transform-origin top-left so the
+       lockup contracts toward the corner instead of drifting inward. */
+    transform-origin:left center;
+    transition:gap .45s cubic-bezier(.4,.0,.2,1);
   }
+  nav.scrolled .brand{gap:14px}
   .brand-mark{
-    /* 5:3 aspect ratio matches the source SVG viewBox (500×300). */
-    width:40px;height:24px;display:inline-flex;align-items:center;justify-content:center;
+    /* 5:3 aspect ratio matches the source SVG viewBox (500×300).
+       Larger at rest, contracts to nav-size on scroll. */
+    width:60px;height:36px;
+    display:inline-flex;align-items:center;justify-content:center;
     position:relative;
+    transition:width .45s cubic-bezier(.4,.0,.2,1), height .45s cubic-bezier(.4,.0,.2,1);
   }
+  nav.scrolled .brand-mark{width:40px;height:24px}
   .brand-mark svg{width:100%;height:100%;display:block;color:var(--white)}
   /* Wordmark — optically aligned so the x-height MIDDLE of the lowercase
      letters sits on the mark's horizontal bar (same axis = unified lockup).
@@ -114,12 +126,14 @@
      descender lift the box top), so we nudge the wordmark UP a hair to put
      the visual mass on-axis. */
   .brand-word{
-    font-family:var(--aitemz);font-weight:400;font-size:23px;
+    font-family:var(--aitemz);font-weight:400;font-size:34px;
     letter-spacing:-0.028em;text-transform:none;
     line-height:1;
     display:inline-flex;align-items:flex-start;
     transform:translateY(-0.05em); /* lift to align x-height with mark bar */
+    transition:font-size .45s cubic-bezier(.4,.0,.2,1);
   }
+  nav.scrolled .brand-word{font-size:23px}
   /* Registered-trademark mark trailing the wordmark — small superscript so it
      doesn't dominate the lockup but is still visible at typical nav sizes. */
   .brand-r{
@@ -414,8 +428,9 @@
     border-bottom:1px solid var(--line);
     padding:18px 0;
     position:sticky;
-    /* nav is ~62px tall (22px padding + 18px content) — match it */
-    top:62px;
+    /* Stick flush against the bottom of the (contracted) nav.
+       --nav-h is set in JS and updates on scroll/resize. */
+    top:var(--nav-h, 62px);
     z-index:90;            /* below nav (z:100), above page content */
     background:rgba(7,7,7,0.92);
     backdrop-filter:blur(10px);
@@ -2449,8 +2464,10 @@
     .nav-links .nav-link{display:none}
     .nav-cta{padding:9px 14px;font-size:10px;letter-spacing:.14em;gap:6px}
     .nav-cta::before{width:5px;height:5px}
-    .brand-mark{width:34px;height:20px}
-    .brand-word{font-size:19px}
+    .brand-mark{width:50px;height:30px}
+    .brand-word{font-size:26px}
+    nav.scrolled .brand-mark{width:34px;height:20px}
+    nav.scrolled .brand-word{font-size:19px}
 
     /* --- MARQUEE / TICKER ---
        Slow it down, drop padding, make sure it stays sticky under the nav. */
@@ -2834,8 +2851,12 @@
      Last-mile tuning for narrow viewports (iPhone SE, small Androids).
   ============================================================ */
   @media (max-width:420px){
-    nav{padding:12px 16px}
-    .brand-word{font-size:17px}
+    nav{padding:16px 16px}
+    nav.scrolled{padding:10px 16px}
+    .brand-word{font-size:22px}
+    nav.scrolled .brand-word{font-size:17px}
+    .brand-mark{width:42px;height:25px}
+    nav.scrolled .brand-mark{width:30px;height:18px}
     .nav-cta{padding:8px 12px;font-size:9.5px}
     /* hide the leading dot on the CTA — it eats too much space at this width */
     .nav-cta::before{display:none}
