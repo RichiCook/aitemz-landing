@@ -816,27 +816,33 @@
       document.addEventListener('touchstart', onTouchStart, { passive: true });
       document.addEventListener('touchmove', onTouchMove, { passive: false });
 
-      // --- Positional lock trigger ---
-      // The phone-wrap is 100svh tall. The lock engages the moment its TOP
-      // crosses (or reaches) the viewport top — at that point the phone is
-      // settled in position, filling the viewport. This is much more stable
-      // than a visibility-ratio check because scroll snapping/momentum can
-      // jump past a ratio threshold; a positional zone catches the crossing.
+      // --- Positional, direction-aware lock trigger ---
+      // The phone-wrap is 100svh tall. The lock ONLY engages when the user
+      // is scrolling DOWN and the phone-wrap is settled at the top of the
+      // viewport. Scrolling back UP past the phone doesn't re-trap the user.
+      let lastScrollY = window.scrollY;
       function checkLock(){
+        const currentY = window.scrollY;
+        const scrollingDown = currentY > lastScrollY;
+        lastScrollY = currentY;
+
         if (locked) return;
+
         const r = phoneWrap.getBoundingClientRect();
+        const vh = window.innerHeight;
 
-        // Lock zone: phone-wrap top is at or just past viewport top, and the
-        // wrap is still mostly on-screen (bottom hasn't exited yet).
-        const inLockZone = r.top <= 4 && r.bottom > window.innerHeight * 0.4;
-        // Reset guard zone: phone-wrap top is meaningfully below or above
-        // the lock band — safe to re-arm the lock.
-        const inResetZone = r.top > 80 || r.top < -window.innerHeight * 0.5;
-
+        // Reset guard zone: phone-wrap is meaningfully out of the lock band.
+        // Once the user has moved past the phone we re-arm so the next pass
+        // can lock again (e.g. on refresh-scroll-down).
+        const inResetZone = r.top > 80 || r.bottom < vh * 0.5;
         if (inResetZone) unlockDir = 0;
 
-        if (inLockZone){
-          if (unlockDir !== 0) return;   // just unlocked, let the user pass
+        // Lock zone: phone is settled at top of viewport (top within a narrow
+        // band around 0 AND bottom near the viewport bottom). Only act when
+        // scrolling DOWN — never re-lock when the user is leaving going up.
+        const inLockZone = r.top <= 4 && r.bottom > vh * 0.9;
+        if (inLockZone && scrollingDown){
+          if (unlockDir !== 0) return;
           computeMax();
           if (maxTape <= 0) return;
           lockScroll();
