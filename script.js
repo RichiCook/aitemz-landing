@@ -816,30 +816,35 @@
       document.addEventListener('touchstart', onTouchStart, { passive: true });
       document.addEventListener('touchmove', onTouchMove, { passive: false });
 
-      // --- Scroll-based lock trigger (more reliable than IntersectionObserver) ---
+      // --- Positional lock trigger ---
+      // The phone-wrap is 100svh tall. The lock engages the moment its TOP
+      // crosses (or reaches) the viewport top — at that point the phone is
+      // settled in position, filling the viewport. This is much more stable
+      // than a visibility-ratio check because scroll snapping/momentum can
+      // jump past a ratio threshold; a positional zone catches the crossing.
       function checkLock(){
-        if (locked) return;          // already locked — wheel/touch drives tape
+        if (locked) return;
         const r = phoneWrap.getBoundingClientRect();
-        const vh = window.innerHeight;
-        const visible = Math.min(r.bottom, vh) - Math.max(r.top, 0);
-        const ratio = visible / r.height;
 
-        // Reset the direction guard as soon as the phone is meaningfully out
-        // of view (lower threshold than the lock threshold — gives hysteresis
-        // so we don't bounce between locked/unlocked at the edge).
-        if (ratio < 0.4) unlockDir = 0;
+        // Lock zone: phone-wrap top is at or just past viewport top, and the
+        // wrap is still mostly on-screen (bottom hasn't exited yet).
+        const inLockZone = r.top <= 4 && r.bottom > window.innerHeight * 0.4;
+        // Reset guard zone: phone-wrap top is meaningfully below or above
+        // the lock band — safe to re-arm the lock.
+        const inResetZone = r.top > 80 || r.top < -window.innerHeight * 0.5;
 
-        if (ratio > 0.78){
-          if (unlockDir !== 0) return;   // just unlocked in this pass, skip
+        if (inResetZone) unlockDir = 0;
+
+        if (inLockZone){
+          if (unlockDir !== 0) return;   // just unlocked, let the user pass
           computeMax();
           if (maxTape <= 0) return;
           lockScroll();
         }
       }
       window.addEventListener('scroll', checkLock, { passive: true });
-      // Belt and braces — also check on touchstart in case the user starts a
-      // touch gesture while the phone is fully in view (some browsers fire
-      // scroll only AFTER touchmove starts, which is too late).
+      // Belt and braces — also check on touchstart, some browsers fire scroll
+      // only AFTER touchmove starts which is too late to engage the lock.
       document.addEventListener('touchstart', checkLock, { passive: true });
 
       // --- Card reveals on scroll (lightweight check) ---
