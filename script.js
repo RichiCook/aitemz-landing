@@ -94,14 +94,17 @@
 
     if (prefersReduced){
       // Reduced motion: hold a static frame, then fade. No scan, no burst.
-      schedule(900,  function(){ setLabel('Aitemz · Verified'); });
+      schedule(900,  function(){ setLabel('Content generated'); });
       schedule(1400, dismiss);
     } else {
-      schedule(900,  function(){ setLabel('Scanning'); });
-      schedule(1700, function(){ setLabel('Authenticating'); });
-      schedule(2350, function(){ setLabel('Aitemz · Verified'); });
-      schedule(2700, function(){ intro.classList.add('activate'); });
-      schedule(3300, dismiss);
+      // Six-state narrative: scan → AI processes → content ready.
+      schedule(600,  function(){ setLabel('Scanning'); });
+      schedule(1200, function(){ setLabel('Gathering data'); });
+      schedule(1800, function(){ setLabel('Processing data'); });
+      schedule(2400, function(){ setLabel('Generating content'); });
+      schedule(3000, function(){ setLabel('Content generated'); });
+      schedule(3350, function(){ intro.classList.add('activate'); });
+      schedule(3950, dismiss);
     }
 
     function dismiss(){
