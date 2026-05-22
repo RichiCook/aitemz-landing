@@ -86,16 +86,13 @@
   </div>
 </div>
 
-<!-- Aitemz mark — asterisk-cross from the brand kit. 5 strokes through 1 center. -->
+<!-- Aitemz mark — exact vector from the brand source (Illustrator export).
+     Single polygon tracing the asterisk silhouette; chamfered terminals on
+     every stroke. ViewBox 500×300 = 5:3 aspect ratio. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="aitm-mark" viewBox="0 0 200 100">
-      <g stroke="currentColor" stroke-width="8" stroke-linecap="butt" fill="none">
-        <line x1="20" y1="50" x2="180" y2="50"/>
-        <line x1="100" y1="20" x2="100" y2="82"/>
-        <line x1="74" y1="22" x2="126" y2="80"/>
-        <line x1="126" y1="22" x2="74" y2="80"/>
-      </g>
+    <symbol id="aitm-mark" viewBox="0 0 500 300">
+      <polygon fill="currentColor" points="259.86 246.69 238.99 246.73 238.97 166.83 111.3 233.41 101.63 214.92 206.75 160.04 21.41 159.99 21.41 139.23 228.31 139.22 182.56 79.68 199.12 66.97 238.93 118.69 238.99 53.38 259.86 53.36 259.88 132.39 387.6 65.79 397.32 84.26 292.18 139.14 477.79 139.23 477.86 159.98 270.62 159.99 316.35 219.5 299.81 232.24 259.9 180.34 259.86 246.69"/>
     </symbol>
   </defs>
 </svg>
@@ -107,11 +104,11 @@
 
 <!-- NAV -->
 <nav id="nav">
-  <a href="#" class="brand">
-    <span class="brand-mark">
+  <a href="#" class="brand" aria-label="Aitemz home">
+    <span class="brand-mark" aria-hidden="true">
       <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet"><use href="#aitm-mark"/></svg>
     </span>
-    <span class="brand-word">aitemz</span>
+    <span class="brand-word">aitemz<sup class="brand-r" aria-hidden="true">®</sup></span>
   </a>
   <div class="nav-links">
     <a href="#waitlist" class="nav-cta">Request access</a>
@@ -852,7 +849,7 @@ channel ever.</h2>
       <span class="brand-mark">
         <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet"><use href="#aitm-mark"/></svg>
       </span>
-      <span class="w">aitemz</span>
+      <span class="w">aitemz<sup class="brand-r" aria-hidden="true">®</sup></span>
     </div>
     <div class="tag">The product<br>is the channel.</div>
   </div>

@@ -97,26 +97,39 @@
     border-bottom-color:var(--line);
   }
   .brand{
-    display:flex;align-items:center;gap:12px;
+    display:flex;align-items:center;gap:14px;
     text-decoration:none;color:var(--white);
     line-height:1;
   }
   .brand-mark{
-    width:36px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+    /* 5:3 aspect ratio matches the source SVG viewBox (500×300). */
+    width:40px;height:24px;display:inline-flex;align-items:center;justify-content:center;
     position:relative;
   }
   .brand-mark svg{width:100%;height:100%;display:block;color:var(--white)}
   /* Wordmark — optically centered against the asterisk-cross mark.
-     Mark stroke-width is 8/100 ≈ 8% — that maps to font-weight ~300/350 in
-     Helvetica Neue. We use 350 + a tiny baseline nudge so the visual mass of
+     Mark stroke-width is 9/100 ≈ 9% — that maps to font-weight ~350/400 in
+     Helvetica Neue. We use 400 + a tiny baseline nudge so the visual mass of
      the letters sits on the mark's horizontal axis (cap-height vs x-height
      correction; otherwise the wordmark reads visually higher). */
   .brand-word{
-    font-family:var(--aitemz);font-weight:350;font-size:22px;
-    letter-spacing:-0.025em;text-transform:none;
+    font-family:var(--aitemz);font-weight:400;font-size:23px;
+    letter-spacing:-0.028em;text-transform:none;
     line-height:1;
-    display:inline-block;
+    display:inline-flex;align-items:flex-start;
     transform:translateY(0.06em); /* optical baseline correction */
+  }
+  /* Registered-trademark mark trailing the wordmark — small superscript so it
+     doesn't dominate the lockup but is still visible at typical nav sizes. */
+  .brand-r{
+    font-family:var(--aitemz);
+    font-size:0.42em;
+    font-weight:400;
+    line-height:1;
+    margin-left:2px;
+    transform:translateY(0.1em); /* sit it as a low superscript */
+    color:currentColor;
+    opacity:.85;
   }
   .nav-links{display:flex;gap:32px;align-items:center}
   .nav-link{
@@ -2435,7 +2448,7 @@
     .nav-links .nav-link{display:none}
     .nav-cta{padding:9px 14px;font-size:10px;letter-spacing:.14em;gap:6px}
     .nav-cta::before{width:5px;height:5px}
-    .brand-mark{width:30px;height:15px}
+    .brand-mark{width:34px;height:20px}
     .brand-word{font-size:19px}
 
     /* --- MARQUEE / TICKER ---
