@@ -149,10 +149,18 @@
     );
   };
   updateNavH();
+  let navRemeasureT = 0;
+  let prevScrolled = null;
   window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 40);
-    // Wait for the size transition to finish (.45s) before remeasuring
-    setTimeout(updateNavH, 460);
+    const shouldBeScrolled = window.scrollY > 40;
+    if (shouldBeScrolled !== prevScrolled) {
+      prevScrolled = shouldBeScrolled;
+      nav.classList.toggle('scrolled', shouldBeScrolled);
+      // Only re-measure once the transition finishes, and only when the
+      // state actually changes — avoids dozens of layout reads per scroll.
+      clearTimeout(navRemeasureT);
+      navRemeasureT = setTimeout(updateNavH, 470);
+    }
   }, {passive:true});
   window.addEventListener('resize', updateNavH);
 
@@ -743,16 +751,18 @@
         locked = true;
         overAccum = 0;
         computeMax();
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
+        // Use a class on html so it survives the cascade (overflow-x:clip in
+        // body/html stylesheet rules used to interfere with inline overflow).
+        // Also set touch-action:none on body to make sure mobile browsers
+        // don't keep handling the page scroll while we're in lock.
+        document.documentElement.classList.add('studio-locked');
       }
 
       function unlockScroll(){
         if (!locked) return;
         locked = false;
         unlockDir = lastDir;   // remember direction so observer doesn't re-lock
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
+        document.documentElement.classList.remove('studio-locked');
       }
 
       function handleDelta(dy){
@@ -814,18 +824,23 @@
         const visible = Math.min(r.bottom, vh) - Math.max(r.top, 0);
         const ratio = visible / r.height;
 
-        if (ratio > 0.75){
-          // Phone is mostly in view — should we lock?
-          if (unlockDir !== 0) return;   // just unlocked, phone still passing through
+        // Reset the direction guard as soon as the phone is meaningfully out
+        // of view (lower threshold than the lock threshold — gives hysteresis
+        // so we don't bounce between locked/unlocked at the edge).
+        if (ratio < 0.4) unlockDir = 0;
+
+        if (ratio > 0.78){
+          if (unlockDir !== 0) return;   // just unlocked in this pass, skip
           computeMax();
-          if (maxTape <= 0) return;      // nothing to scroll
+          if (maxTape <= 0) return;
           lockScroll();
-        } else {
-          // Phone is mostly out — reset direction guard
-          unlockDir = 0;
         }
       }
       window.addEventListener('scroll', checkLock, { passive: true });
+      // Belt and braces — also check on touchstart in case the user starts a
+      // touch gesture while the phone is fully in view (some browsers fire
+      // scroll only AFTER touchmove starts, which is too late).
+      document.addEventListener('touchstart', checkLock, { passive: true });
 
       // --- Card reveals on scroll (lightweight check) ---
       function checkCards(){

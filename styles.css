@@ -30,6 +30,13 @@
 
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth;overflow-x:clip;max-width:100%}
+  /* Studio scroll-hijack lock: total scroll freeze for both axes plus
+     touch-action:none so iOS Safari doesn't keep handing scroll to native. */
+  html.studio-locked,html.studio-locked body{
+    overflow:hidden !important;
+    touch-action:none !important;
+    overscroll-behavior:none;
+  }
   /* anchor offset so jump targets clear the fixed nav + sticky ticker */
   section[id], header[id]{scroll-margin-top:var(--sticky-offset, 130px)}
   body{
