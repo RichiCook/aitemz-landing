@@ -724,7 +724,7 @@
       let maxTape      = 0;
       let touchStartY  = 0;
       let lastDir      = 1;     // 1 = scrolling down, -1 = scrolling up
-      const OVERSCROLL = 60;    // extra px of scroll after tape end before unlock
+      const OVERSCROLL = 40;    // extra px of scroll after tape end before unlock
       let overAccum    = 0;     // accumulator for overscroll buffer
       let unlockDir    = 0;     // 0 = none, 1 = unlocked going down, -1 = unlocked going up
 
@@ -816,35 +816,39 @@
       document.addEventListener('touchstart', onTouchStart, { passive: true });
       document.addEventListener('touchmove', onTouchMove, { passive: false });
 
-      // --- Positional, direction-aware lock trigger ---
-      // The phone-wrap is 100svh tall. The lock ONLY engages when the user
-      // is scrolling DOWN and the phone-wrap is settled at the top of the
-      // viewport. Scrolling back UP past the phone doesn't re-trap the user.
-      let lastScrollY = window.scrollY;
+      // --- Positional, bi-directional lock trigger ---
+      // The phone-wrap is 100svh tall. Treat the moment its top crosses the
+      // viewport top as the lock event — in either scroll direction. Tape
+      // scrolling becomes a seamless continuation of page scroll: down
+      // advances the tape, up rewinds it, and the page resumes scrolling
+      // naturally when the tape exhausts in either direction.
       function checkLock(){
-        const currentY = window.scrollY;
-        const scrollingDown = currentY > lastScrollY;
-        lastScrollY = currentY;
-
         if (locked) return;
 
         const r = phoneWrap.getBoundingClientRect();
         const vh = window.innerHeight;
 
-        // Reset guard zone: phone-wrap is meaningfully out of the lock band.
-        // Once the user has moved past the phone we re-arm so the next pass
-        // can lock again (e.g. on refresh-scroll-down).
-        const inResetZone = r.top > 80 || r.bottom < vh * 0.5;
-        if (inResetZone) unlockDir = 0;
+        // Lock band — tight zone around the moment the phone is settled at
+        // the top of the viewport. Narrow enough to feel intentional
+        // ("phone is now in position"), wide enough to catch normal scroll
+        // deltas without skipping over the trigger point.
+        const inLockBand = r.top <= 40 && r.top > -40;
 
-        // Lock zone: phone is settled at top of viewport (top within a narrow
-        // band around 0 AND bottom near the viewport bottom). Only act when
-        // scrolling DOWN — never re-lock when the user is leaving going up.
-        const inLockZone = r.top <= 4 && r.bottom > vh * 0.9;
-        if (inLockZone && scrollingDown){
-          if (unlockDir !== 0) return;
+        // Reset guard zone: outside the lock band by a comfortable margin —
+        // the user has either not yet reached the phone, or has clearly
+        // exited past it. Safe to re-arm.
+        const outsideBand = r.top > 120 || r.top < -vh * 0.5;
+        if (outsideBand) unlockDir = 0;
+
+        if (inLockBand){
+          if (unlockDir !== 0) return;   // just unlocked in this pass
           computeMax();
           if (maxTape <= 0) return;
+          // If approaching from below (scrolling up), the tape should be at
+          // its end so scrolling up rewinds it. If approaching from above
+          // (scrolling down), it should be at the start. We use the current
+          // tapeOffset — preserved between locks so re-entries pick up where
+          // the user left off.
           lockScroll();
         }
       }
